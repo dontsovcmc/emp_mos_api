@@ -50,3 +50,23 @@ api.send_watercounters(flat_id, new_values)
 [examples](https://github.com/dontsovcmc/emp_mos_ru/tree/master/emp_mos_api/examples)
 
 
+## Установка:
+```
+[sudo] pip install -r requirements.txt
+```
+Если нет pip, то ставим его:
+#### linux
+``` 
+sudo apt-get install python-pip python-dev build-essential
+```
+#### windows
+```
+python https://bootstrap.pypa.io/get-pip.py
+# добавляем пусть до pip в PATH (C:\Python27\Scripts)
+перезагружаем терминал
+```
+
+## Создание пакета
+```
+python setup.py sdist --formats=zip bdist_wheel   # или --formats=gztar
+```

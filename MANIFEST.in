@@ -1,0 +1,3 @@
+include *.md
+include LICENSE
+recursive-include emp_mos_api/*.py
