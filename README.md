@@ -52,7 +52,7 @@ api.send_watercounters(flat_id, new_values)
 
 ## Установка:
 ```
-[sudo] pip install -r requirements.txt
+[sudo] pip install -U emp-mos-api
 ```
 Если нет pip, то ставим его:
 #### linux

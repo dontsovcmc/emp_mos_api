@@ -31,7 +31,7 @@ if __name__ == '__main__':
         description=__doc__.replace('\n', '').strip(),
         long_description=long_description,
         author='Dontsov E.',
-        author_email='-',
+        author_email='dontsovcmc@gmail.com',
         url='https://github.com/dontsovcmc/emp_mos_api',
         py_modules=['emp_mos_api'],
         include_package_data=True,
