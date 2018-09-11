@@ -1,7 +1,14 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import argparse
-from emp_mos_api.mos import MosAPI
+from emp_mos_api.mos import MosAPI, \
+    get_flat_name, get_flat_address, get_flat_paycode, get_flat_number, \
+    get_profile_firstname, get_profile_middlename, get_profile_lastname, \
+    get_profile_birthdate, get_profile_msisdn, get_profile_email
 
+
+# Код написан общим для python2, python3 синтаксисом благодаря
+# http://python-future.org/compatible_idioms.html
 
 if __name__ == "__main__":
 
@@ -26,24 +33,26 @@ if __name__ == "__main__":
 
     try:
         api.login(args.login, args.pwd)
-        profile = api.get_profile()
+        p = api.get_profile()
 
-        print u'ФИО: {} {} {}'.format(profile['firstname'], profile['middlename'], profile['lastname'])
-        print u'Дата рождения: {}'.format(profile['birthdate'])
-        print u'Телефон: {}'.format(profile['msisdn'])
-        print u'Эл. почта: {}'.format(profile['email'])
+        print('ФИО: ', get_profile_firstname(p),
+              ' ', get_profile_middlename(p),
+              ' ', get_profile_lastname(p))
+        print('Дата рождения: ', get_profile_birthdate(p))
+        print('Телефон: ', get_profile_msisdn(p))
+        print('Эл. почта: ', get_profile_email(p))
 
         flats = api.get_flats()
 
-        print u'Кол-во квартир: {}'.format(len(flats))
-        assert flats, u'Добавьте квартиру в приложении Госуслуги Москвы'
+        print('Кол-во квартир: ', len(flats))
+        assert flats, 'Добавьте квартиру в приложении Госуслуги Москвы'
 
         for f in flats:
-            print u'Квартира #{}'.format(flats.index(f) + 1)
-            print u'Название: {}'.format(f['name'])
-            print u'Адрес: {}'.format(f['address'])
-            print u'Номер кв: {}'.format(f['flat_number'])
-            print u'Номер платежки: {}'.format(f['paycode'])
+            print('Квартира #', flats.index(f) + 1)
+            print('Название: ', get_flat_name(f))
+            print('Адрес: ', get_flat_address(f))
+            print('Номер кв: ', get_flat_number(f))
+            print('Номер платежки: ', get_flat_paycode(f))
 
     finally:
         api.logout()

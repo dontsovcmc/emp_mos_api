@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import argparse
-import datetime
-from emp_mos_api.mos import MosAPI, get_watercounters_id, get_watercounter_value
+from emp_mos_api.mos import MosAPI, \
+    get_flat_id, get_flat_address, get_flat_paycode, get_flat_number, \
+    get_watercounters_by_type, get_watermeter_last_value, \
+    get_watermeter_id, watermeter_new_value_json, get_watercounter_value, \
+    HOT_WATER, COLD_WATER
 
 
 if __name__ == "__main__":
@@ -34,52 +38,42 @@ if __name__ == "__main__":
         flats = api.get_flats()
         assert flats, u'Добавьте квартиру в приложении Госуслуги Москвы'
         f = flats[0]
-        print u'Адрес: {}'.format(f['address'])
-        print u'Номер кв: {}'.format(f['flat_number'])
-        print u'Номер платежки: {}'.format(f['paycode'])
+        print('Адрес: ', get_flat_address(f))
+        print('Номер кв:  ', get_flat_number(f))
+        print('Номер платежки: ', get_flat_paycode(f))
 
-        water = api.get_watercounters(f['flat_id'])
+        json_data = api.get_watercounters(get_flat_id(f))
 
         new_values = []
 
-        hot_ids = get_watercounters_id(u'ГВС', water)  # разбираем ответ
+        #
+        hots_json = get_watercounters_by_type(HOT_WATER, json_data) # разбираем ответ
 
-        if hot_ids:
-            hot_id = hot_ids[0]
-            hot_value = get_watercounter_value(hot_id, water)  # разбираем ответ
-            print 'Текущее показание горячей воды: {:.2f} m3'.format(hot_value)
+        if hots_json:
+            hot_value = get_watermeter_last_value(hots_json[0])
+            print('Текущее показание горячей воды: {:.2f} m3'.format(hot_value))
 
             if args.hot:
-                new_values.append({
-                    'counter_id': hot_id,
-                    'period': datetime.datetime.now().strftime("%Y-%m-%d"),
-                    'indication': '{:.2f}'.format(args.hot).replace('.', ',')
-                })
-                print 'Новое показание горячей воды: {:.2f} m3'.format(args.hot)
+                new_values.append(watermeter_new_value_json(get_watermeter_id(hots_json[0]), args.hot))
+                print('Новое показание горячей воды: {:.2f} m3'.format(args.hot))
         else:
-            print u'Не найден счетчик горячей воды'
+            print('Не найден счетчик горячей воды')
 
         #
-        cold_ids = get_watercounters_id(u'ХВС', water)
-
-        if cold_ids:
-            cold_id = cold_ids[0]
-            cold_value = get_watercounter_value(cold_id, water)
-            print 'Текущее показание холодной воды: {:.2f} m3'.format(cold_value)
+        colds_json = get_watercounters_by_type(COLD_WATER, json_data)
+        if colds_json:
+            cold_value = get_watermeter_last_value(colds_json[0])
+            print('Текущее показание холодной воды: {:.2f} m3'.format(cold_value))
 
             if args.cold:
-                new_values.append({
-                    'counter_id': cold_id,
-                    'period': datetime.datetime.now().strftime("%Y-%m-%d"),
-                    'indication': '{:.2f}'.format(args.cold).replace('.', ',')
-                })
-                print 'Новое показание холодной воды: {:.2f} m3'.format(args.cold)
+                new_values.append(watermeter_new_value_json(get_watermeter_id(colds_json[0]), args.cold))
+                print('Новое показание холодной воды: {:.2f} m3'.format(args.cold))
         else:
-            print u'Не найден счетчик холодной воды'
+            print('Не найден счетчик холодной воды')
 
         if new_values:
-            api.send_watercounters(f['flat_id'], new_values)
-            print 'Показания отправлены на сервер'
+            api.send_watercounters(get_flat_id(f), new_values)
+            print('Показания отправлены на сервер')
 
     finally:
         api.logout()

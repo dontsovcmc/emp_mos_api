@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import requests
-import datetime
-import argparse
+from datetime import datetime, tzinfo
 from copy import deepcopy
 
 
@@ -18,13 +18,19 @@ def check_error(answer):
     :return:
     """
     if answer['errorCode'] != 0:
-        raise Exception(u'Error code: {0}, message: {1}'.format(answer['errorCode'], answer['errorMessage']))
+        raise Exception('Error code: {0}, message: {1}'.format(answer['errorCode'], answer['errorMessage']))
 
+
+COLD_WATER = 1
+HOT_WATER = 2
 
 counter_types = {
-    1: u'ХВС',
-    2: u'ГВС'
+    COLD_WATER: 'ХВС',
+    HOT_WATER: 'ГВС'
 }
+
+COLD_WATER_TITLE_RUS = counter_types[COLD_WATER]
+HOT_WATER_TITLE_RUS = counter_types[HOT_WATER]
 
 
 class MosAPI(object):
@@ -110,7 +116,7 @@ class MosAPI(object):
         """
         :return: JSON
         {
-        u'profile': {
+            u'profile': {
             u'drive_license': None,
             u'firstname': u'x',
             u'middlename': u'x',
@@ -260,7 +266,7 @@ class MosAPI(object):
         :param counters_data: array of
             [{
                 'counter_id': u'123456', # ['counters'][0]['counterId']
-                'period': datetime.datetime.now().strftime("%Y-%m-%d"),
+                'period': datetime.now().strftime("%Y-%m-%d"),
                 'indication': 'xxx,xx'
             }, {
                 ...
@@ -314,15 +320,146 @@ class MosAPI(object):
             return response['result']
 
 
-def get_watercounters_id(water_type, response):
+def get_profile_firstname(profile_json):
+    return profile_json['firstname']
+
+
+def get_profile_middlename(profile_json):
+    return profile_json['middlename']
+
+
+def get_profile_lastname(profile_json):
+    return profile_json['lastname']
+
+
+def get_profile_birthdate(profile_json):
+    return profile_json['birthdate']
+
+
+def get_profile_msisdn(profile_json):
+    return profile_json['msisdn']
+
+
+def get_profile_email(profile_json):
+    return profile_json['email']
+
+
+def get_flat_id(flat_json):
     """
-    :param water_type: ГВС, ХВС
+    :param flat_json answer for api.get_flats()
+    :return:
+    """
+    return flat_json['flat_id']
+
+
+def get_flat_name(flat_json):
+    """
+    :param flat_json answer for api.get_flats()
+    :return:
+    """
+    return flat_json['name']
+
+
+def get_flat_address(flat_json):
+    """
+    :param flat_json answer for api.get_flats()
+    :return:
+    """
+    return flat_json['address']
+
+
+def get_flat_number(flat_json):
+    """
+    :param flat_json answer for api.get_flats()
+    :return:
+    """
+    return flat_json['flat_number']
+
+
+def get_flat_paycode(flat_json):
+    """
+    :param flat_json answer for api.get_flats()
+    :return:
+    """
+    return flat_json['paycode']
+
+
+def get_watercounters_id(water_type_id, response):
+    """
+    :param water_type_id: COLD_WATER, HOT_WATER
     :param response: get_watercounters() response
     :return: array of int or NULL
     """
-    counters = filter(lambda x: counter_types[x['type']] == water_type, response['counters'])
+    counters = filter(lambda x: x['type'] == water_type_id, response['counters'])
     if counters:
         return list(c['counterId'] for c in counters)
+
+
+def get_watercounters_by_type(water_type_id, response):
+    """
+    :param water_type_id: COLD_WATER, HOT_WATER
+    :param response: get_watercounters() response
+    :return: response JSON array:
+        [{'counterId': 1437373,
+         'type': 1,
+         'num': '417944',
+         'checkup': '2023-09-25+03:00',
+         'indications':
+            [{'period': '2018-08-31+03:00', 'indication': '21.38'},
+             {'period': '2018-07-31+03:00', 'indication': '20.7'},
+             {'period': '2018-06-30+03:00', 'indication': '19'}]
+        },
+        {...}]
+    """
+    return list(filter(lambda x: x['type'] == water_type_id, response['counters']))
+
+
+def get_watercounter_by_id(id, response):
+    return list(filter(lambda x: x['counterId'] == id, response['counters']))[0]
+
+
+def get_counter_by_num(num, response):
+    """
+    :param num: Номер счетчика из приложения
+    :param response: JSON
+        {'counterId': 1437373,
+         'type': 1,
+         'num': '417944',
+         'checkup': '2023-09-25+03:00',
+         'indications':
+            [{'period': '2018-08-31+03:00', 'indication': '21.38'},
+             {'period': '2018-07-31+03:00', 'indication': '20.7'},
+             {'period': '2018-06-30+03:00', 'indication': '19'}]
+        }
+    :return:
+    """
+    return list(filter(lambda x: x['num'] == num, response['counters']))[0]
+
+
+def get_watermeter_last_value(counter):
+    """
+    :param counter: counter JSON from get_counter_by_num
+    :return: float
+    """
+    indications = counter['indications']
+    indications.sort(key=lambda x: x['period'])  # alphabetical sort data =)
+    assert indications, 'Нет показаний'
+    return float(indications[-1]['indication'])
+
+
+def get_watermeter_id(counter):
+    return counter['counterId']
+
+
+def get_watermeter_checkup(counter):
+    """
+    :param counter: counter JSON from get_counter_by_num
+                    'checkup': '2023-09-25+03:00'
+    :return: datetime с временной зоной
+    """
+    checkup = counter['checkup']
+    d = datetime.strptime(checkup, '%Y-%m-%d%z') #https://docs.python.org/3/library/datetime.html#datetime.timezone
+    return d  # Не будем приводить к UTC d.replace(tzinfo=None)
 
 
 def get_watercounter_value(counterId, response):
@@ -331,11 +468,18 @@ def get_watercounter_value(counterId, response):
     :param response: get_watercounters() response
     :return: float
     """
-    for c in response['counters']:
-        if c['counterId'] == counterId:
-            if 'indications' in c:
-                indications = c['indications']
-                indications.sort(key=lambda x: x['period'])  # alphabetical sort data =)
-                assert indications
-                return float(indications[-1]['indication'])
+    c = get_watercounter_by_id(counterId, response)
+    return get_watermeter_last_value(c)
 
+
+def watermeter_new_value_json(counterId, value):
+    """
+    :param counterId: id счетчика. не номер из приложения!
+    :param value: значение float
+    :return: dict
+    """
+    return {
+        'counter_id': int(counterId),
+        'period': datetime.now().strftime("%Y-%m-%d"),
+        'indication': '{:.2f}'.format(value).replace('.', ',')
+    }

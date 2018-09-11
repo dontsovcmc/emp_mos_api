@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 Неофициальный Python клиент Единой мобильной платформы города Москвы.
 """
 
 import sys
-import platform
+import distro
 from setuptools import setup
 
 
@@ -14,7 +16,7 @@ VERSION_MINOR = 1
 
 ver = '%d.%d' % (VERSION_MAJOR, VERSION_MINOR)
 
-cur = 'win32' if sys.platform == 'win32' else platform.linux_distribution()[0].lower()
+cur = 'win32' if sys.platform == 'win32' else distro.linux_distribution(full_distribution_name=False)[0].lower()
 ext = '.zip' if sys.platform == 'win32' else '.tar.gz'
 
 bin_name = 'emp_mos_api-%s-%s%s' % (cur, ver, ext)
@@ -40,12 +42,14 @@ if __name__ == '__main__':
         ],
         classifiers=(
             "Programming Language :: Python :: 2.7",
+            'Programming Language :: Python :: 3',
             "License :: OSI Approved :: MIT License",
             "Operating System :: OS Independent",
         ),
         license='MIT',
         platforms=['linux2', 'win32'],
         install_requires=[
-            'requests'
+            'requests==2.19.1',
+            'distro==1.3.0'
         ],
     )
