@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-
 """
 Неофициальный Python клиент Единой мобильной платформы города Москвы.
 """
+from __future__ import print_function
 
 import sys
 import distro
@@ -12,7 +11,7 @@ from setuptools import setup
 
 
 VERSION_MAJOR = 0
-VERSION_MINOR = 1  
+VERSION_MINOR = 2
 
 ver = '%d.%d' % (VERSION_MAJOR, VERSION_MINOR)
 
