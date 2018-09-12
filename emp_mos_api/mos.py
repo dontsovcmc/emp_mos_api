@@ -415,13 +415,19 @@ def get_watercounters_by_type(water_type_id, response):
 
 
 def get_watercounter_by_id(id, response):
+    """
+    :param id: внутреннее id счетчика
+    :param response: JSON array
+    :return:
+    """
     return list(filter(lambda x: x['counterId'] == id, response['counters']))[0]
 
 
-def get_counter_by_num(num, response):
+def get_watercounter_by_num(num, response):
     """
     :param num: Номер счетчика из приложения
-    :param response: JSON
+    :param response: JSON array
+    :return:
         {'counterId': 1437373,
          'type': 1,
          'num': '417944',
@@ -431,14 +437,13 @@ def get_counter_by_num(num, response):
              {'period': '2018-07-31+03:00', 'indication': '20.7'},
              {'period': '2018-06-30+03:00', 'indication': '19'}]
         }
-    :return:
     """
     return list(filter(lambda x: x['num'] == num, response['counters']))[0]
 
 
-def get_watermeter_last_value(counter):
+def get_watercounter_last_value(counter):
     """
-    :param counter: counter JSON from get_counter_by_num
+    :param counter: counter JSON from get_watercounter_by_num
     :return: float
     """
     indications = counter['indications']
@@ -447,13 +452,13 @@ def get_watermeter_last_value(counter):
     return float(indications[-1]['indication'])
 
 
-def get_watermeter_id(counter):
+def get_watercounter_id(counter):
     return counter['counterId']
 
 
-def get_watermeter_checkup(counter):
+def get_watercounter_checkup(counter):
     """
-    :param counter: counter JSON from get_counter_by_num
+    :param counter: counter JSON from get_watercounter_by_num
                     'checkup': '2023-09-25+03:00'
     :return: datetime с временной зоной
     """
@@ -469,10 +474,10 @@ def get_watercounter_value(counterId, response):
     :return: float
     """
     c = get_watercounter_by_id(counterId, response)
-    return get_watermeter_last_value(c)
+    return get_watercounter_last_value(c)
 
 
-def watermeter_new_value_json(counterId, value):
+def watercounter_new_value_json(counterId, value):
     """
     :param counterId: id счетчика. не номер из приложения!
     :param value: значение float
