@@ -69,4 +69,5 @@ python https://bootstrap.pypa.io/get-pip.py
 ## Создание пакета
 ```
 python setup.py sdist --formats=zip bdist_wheel   # или --formats=gztar
+twine upload dist/*
 ```

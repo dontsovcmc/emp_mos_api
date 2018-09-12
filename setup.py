@@ -11,7 +11,7 @@ from setuptools import setup
 
 
 VERSION_MAJOR = 0
-VERSION_MINOR = 2
+VERSION_MINOR = 3
 
 ver = '%d.%d' % (VERSION_MAJOR, VERSION_MINOR)
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         license='MIT',
         platforms=['linux2', 'win32'],
         install_requires=[
-            'requests==2.19.1',
-            'distro==1.3.0'
+            'distro==1.3.0',
+            'requests==2.19.1'
         ],
     )
