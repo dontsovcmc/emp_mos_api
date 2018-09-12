@@ -29,8 +29,13 @@ counter_types = {
     HOT_WATER: 'ГВС'
 }
 
-COLD_WATER_TITLE_RUS = counter_types[COLD_WATER]
-HOT_WATER_TITLE_RUS = counter_types[HOT_WATER]
+water_human_name = {
+    COLD_WATER: 'холодная вода',
+    HOT_WATER: 'горячая вода'
+}
+
+COLD_WATER_TITLE_RUS = water_human_name[COLD_WATER]
+HOT_WATER_TITLE_RUS = water_human_name[HOT_WATER]
 
 
 class MosAPI(object):
@@ -384,17 +389,6 @@ def get_flat_paycode(flat_json):
     return flat_json['paycode']
 
 
-def get_watercounters_id(water_type_id, response):
-    """
-    :param water_type_id: COLD_WATER, HOT_WATER
-    :param response: get_watercounters() response
-    :return: array of int or NULL
-    """
-    counters = filter(lambda x: x['type'] == water_type_id, response['counters'])
-    if counters:
-        return list(c['counterId'] for c in counters)
-
-
 def get_watercounters_by_type(water_type_id, response):
     """
     :param water_type_id: COLD_WATER, HOT_WATER
@@ -420,7 +414,9 @@ def get_watercounter_by_id(id, response):
     :param response: JSON array
     :return:
     """
-    return list(filter(lambda x: x['counterId'] == id, response['counters']))[0]
+    l = list(filter(lambda x: x['counterId'] == id, response['counters']))
+    if l:
+        return l[0]
 
 
 def get_watercounter_by_num(num, response):
@@ -438,7 +434,9 @@ def get_watercounter_by_num(num, response):
              {'period': '2018-06-30+03:00', 'indication': '19'}]
         }
     """
-    return list(filter(lambda x: x['num'] == num, response['counters']))[0]
+    l = list(filter(lambda x: x['num'] == num, response['counters']))
+    if l:
+        return l[0]
 
 
 def get_watercounter_last_value(counter):
@@ -454,6 +452,25 @@ def get_watercounter_last_value(counter):
 
 def get_watercounter_id(counter):
     return counter['counterId']
+
+
+def get_watercounter_type(counter):
+    return counter['type']
+
+
+def get_watercounter_num(counter):
+    return counter['num']
+
+
+def get_watercounter_counters(json_data):
+    return json_data['counters']
+
+
+def get_watercounter_water_name(counter):
+    if counter['type'] == COLD_WATER:
+        return COLD_WATER_TITLE_RUS
+    elif counter['type'] == HOT_WATER:
+        return HOT_WATER_TITLE_RUS
 
 
 def get_watercounter_checkup(counter):

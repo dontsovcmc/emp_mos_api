@@ -3,7 +3,7 @@ from __future__ import print_function
 import argparse
 from emp_mos_api.mos import MosAPI, \
     get_flat_id, get_flat_address, get_flat_paycode, get_flat_number, \
-    get_watercounters_by_type, get_watercounter_last_value, \
+    get_watercounters_by_type, get_watercounter_last_value, get_watercounters, \
     get_watercounter_id, watercounter_new_value_json, \
     HOT_WATER, COLD_WATER
 
@@ -43,11 +43,12 @@ if __name__ == "__main__":
         print('Номер платежки: ', get_flat_paycode(f))
 
         json_data = api.get_watercounters(get_flat_id(f))
+        json_wc = api.get_watercounters(json_data)
 
         new_values = []
 
         #
-        hots_json = get_watercounters_by_type(HOT_WATER, json_data) # разбираем ответ
+        hots_json = get_watercounters_by_type(HOT_WATER, json_wc) # разбираем ответ
 
         if hots_json:
             hot_value = get_watercounter_last_value(hots_json[0])
@@ -60,7 +61,7 @@ if __name__ == "__main__":
             print('Не найден счетчик горячей воды')
 
         #
-        colds_json = get_watercounters_by_type(COLD_WATER, json_data)
+        colds_json = get_watercounters_by_type(COLD_WATER, json_wc)
         if colds_json:
             cold_value = get_watercounter_last_value(colds_json[0])
             print('Текущее показание холодной воды: {:.2f} m3'.format(cold_value))
