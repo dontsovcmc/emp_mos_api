@@ -11,7 +11,7 @@ from setuptools import setup
 
 
 VERSION_MAJOR = 0
-VERSION_MINOR = 3
+VERSION_MINOR = 4
 
 ver = '%d.%d' % (VERSION_MAJOR, VERSION_MINOR)
 

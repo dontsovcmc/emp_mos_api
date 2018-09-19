@@ -3,7 +3,7 @@ from __future__ import print_function
 import argparse
 from emp_mos_api.mos import MosAPI, \
     get_flat_id, get_flat_address, get_flat_paycode, get_flat_number, \
-    get_watercounters_by_type, get_watercounter_last_value, get_watercounters, \
+    get_watercounters_by_type, get_watercounter_last_value, \
     get_watercounter_id, watercounter_new_value_json, \
     HOT_WATER, COLD_WATER
 
