@@ -4,22 +4,12 @@
 Неофициальный Python клиент Единой мобильной платформы города Москвы.
 """
 from __future__ import print_function
-
-import sys
-import distro
 from setuptools import setup
 
-
 VERSION_MAJOR = 0
-VERSION_MINOR = 4
+VERSION_MINOR = 7
 
 ver = '%d.%d' % (VERSION_MAJOR, VERSION_MINOR)
-
-cur = 'win32' if sys.platform == 'win32' else distro.linux_distribution(full_distribution_name=False)[0].lower()
-ext = '.zip' if sys.platform == 'win32' else '.tar.gz'
-
-bin_name = 'emp_mos_api-%s-%s%s' % (cur, ver, ext)
-
 
 if __name__ == '__main__':
 
@@ -37,7 +27,8 @@ if __name__ == '__main__':
         py_modules=['emp_mos_api'],
         include_package_data=True,
         packages=[
-            'emp_mos_api'
+            'emp_mos_api',
+            'emp_mos_api.examples'
         ],
         classifiers=(
             "Programming Language :: Python :: 2.7",
@@ -48,7 +39,6 @@ if __name__ == '__main__':
         license='MIT',
         platforms=['linux2', 'win32'],
         install_requires=[
-            'distro==1.3.0',
             'requests==2.19.1'
         ],
     )

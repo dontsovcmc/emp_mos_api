@@ -1,3 +1,4 @@
 include *.md
 include LICENSE
 recursive-include emp_mos_api/*.py
+recursive-include emp_mos_api/examples/*.py
