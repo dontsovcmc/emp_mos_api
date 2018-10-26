@@ -5,6 +5,10 @@ from datetime import datetime, tzinfo
 from copy import deepcopy
 
 
+class AuthException(Exception):
+    pass
+
+
 def check_error(answer):
     """
     :param answer: JSON
@@ -17,50 +21,57 @@ def check_error(answer):
     }
     :return:
     """
+    if answer['errorCode'] == 401:
+        raise AuthException()
+
     if answer['errorCode'] != 0:
-        raise Exception('Error code: {0}, message: {1}'.format(answer['errorCode'], answer['errorMessage']))
+        if answer['errorMessage']:
+            raise Exception(u'{0} (code:{1})'.format(answer['errorMessage'], answer['errorCode']))
+        raise Exception(u'code:{0}'.format(answer['errorCode']))
 
 
 COLD_WATER = 1
 HOT_WATER = 2
 
 counter_types = {
-    COLD_WATER: 'ХВС',
-    HOT_WATER: 'ГВС'
+    COLD_WATER: u'ХВС',
+    HOT_WATER: u'ГВС'
 }
 
 water_human_name = {
-    COLD_WATER: 'холодная вода',
-    HOT_WATER: 'горячая вода'
+    COLD_WATER: u'холодная вода',
+    HOT_WATER: u'горячая вода'
 }
 
 COLD_WATER_TITLE_RUS = water_human_name[COLD_WATER]
 HOT_WATER_TITLE_RUS = water_human_name[HOT_WATER]
 
 
-class MosAPI(object):
-
+class Client(object):
+    """
+    Данные клиента
+    """
     def __init__(self, **kwargs):
-        self.session = requests.Session()
-        self.session_id = None
         self.token = kwargs.get('token')
-        self.user_agent = kwargs.get('user_agent')
-
         self.guid = kwargs.get('guid')
+        self.https_verify = kwargs.get('https_verify', False)
+        self.timeout = kwargs.get('timeout', 3)
+
+        self.session_id = None  # emp mos ru
+        self.user_agent = kwargs.get('user_agent')
         self.dev_app_version = kwargs.get('dev_app_version')
         self.dev_user_agent = kwargs.get('dev_user_agent')
-
         self.headers = {'Cache-Control': 'no-cache',
                    'Host': 'emp.mos.ru',
                    'Connection': 'Keep-Alive',
                    'Accept-Encoding': 'gzip',
                    'User-Agent': self.user_agent}
-
         self.pheaders = deepcopy(self.headers)
         self.pheaders.update({
             'X-Cache-ov': '15552000',
             'X-Cache-ov-mode': 'FORCE_NETWORK'
         })
+        self.session = requests.Session()
 
     def is_active(self):
         """
@@ -100,7 +111,7 @@ class MosAPI(object):
             }
         }
 
-        ret = self.session.post('https://emp.mos.ru/v1.0/auth/virtualLogin',
+        ret = client.session.post('https://emp.mos.ru/v1.0/auth/virtualLogin',
                      params={'token': self.token},
                      headers={'Content-Type': 'application/json; charset=UTF-8',
                               'Connection': 'Keep-Alive',
@@ -109,7 +120,8 @@ class MosAPI(object):
                               'cache-control': 'no-cache',
                               'Host': 'emp.mos.ru',
                               'Accept': '*/*'},
-                     verify=False,
+                     verify=self.https_verify,
+                     timeout=self.timeout,
                      json=login_data)
 
         response = ret.json()
@@ -135,12 +147,14 @@ class MosAPI(object):
         """
         assert self.session_id
 
-        ret = self.session.get('https://emp.mos.ru/v1.0/profile/get',
-                    params={'token': self.token,
-                            'info[guid]': self.guid,
-                            'auth[session_id]': self.session_id
-                            },
-                    headers=self.pheaders)
+        ret = client.session.get('https://emp.mos.ru/v1.0/profile/get',
+                                params={'token': self.token,
+                                        'info[guid]': self.guid,
+                                        'auth[session_id]': client.session_id
+                                        },
+                                headers=self.pheaders,
+                                verify=self.https_verify,
+                                timeout=self.timeout)
 
         response = ret.json()
         check_error(response)
@@ -167,11 +181,13 @@ class MosAPI(object):
         assert self.session_id
 
         ret = self.session.get('https://emp.mos.ru/v1.0/flat/get',
-                    params={'token': self.token,
-                            'info[guid]': self.guid,
-                            'auth[session_id]': self.session_id
-                            },
-                    headers=self.pheaders)
+                                params={'token': self.token,
+                                        'info[guid]': self.guid,
+                                        'auth[session_id]': self.session_id
+                                        },
+                                headers=self.pheaders,
+                                verify=self.https_verify,
+                                timeout = self.timeout)
 
         response = ret.json()
         check_error(response)
@@ -252,14 +268,16 @@ class MosAPI(object):
                 'guid': self.guid
             },
             'auth': {
-                'session_id': self.session_id
+                'session_id': client.session_id
             }
         }
 
         ret = self.session.post('https://emp.mos.ru/v1.0/watercounters/get',
-                     params={'token': self.token},
-                     headers=wheaders,
-                     json=wcrequest)
+                                 params={'token': self.token},
+                                 headers=wheaders,
+                                 verify=self.https_verify,
+                                 timeout=self.timeout,
+                                 json=wcrequest)
 
         response = ret.json()
         check_error(response)
@@ -280,7 +298,7 @@ class MosAPI(object):
         """
         assert self.session_id
 
-        wheaders = deepcopy(self.headers)
+        wheaders = deepcopy(client.headers)
         wheaders.update({
                 'X-Clears-tags': 'WATER_COUNTERS',
                 'Content-Type': 'application/json; charset=UTF-8'
@@ -296,15 +314,18 @@ class MosAPI(object):
                      }}
 
         ret = self.session.post('https://emp.mos.ru/v1.0/watercounters/addValues',
-                     params={'token': self.token},
-                     headers=wheaders,
-                     json=wcrequest)
+                                                     params={'token': self.token},
+                                                     headers=self.wheaders,
+                                                     verify=self.https_verify,
+                                                     timeout=self.timeout,
+                                                     json=wcrequest)
 
         response = ret.json()
         check_error(response)
         return response['result']
 
     def logout(self):
+
         if self.session_id:
             logout_data = {
                 'info': {
@@ -314,9 +335,10 @@ class MosAPI(object):
                     'session_id': self.session_id
                 }
             }
-            ret = self.session.post('https://emp.mos.ru/v1.0/auth/logout',
+            ret = client.session.post('https://emp.mos.ru/v1.0/auth/logout',
                          params={'token': self.token},
                          headers=self.headers,
+                         timeout=self.timeout,
                          json=logout_data)
 
             response = ret.json()
@@ -325,16 +347,67 @@ class MosAPI(object):
             return response['result']
 
 
-def get_profile_firstname(profile_json):
-    return profile_json['firstname']
+class MosAPI(object):
+    """
+    kwargs:
+    Общие для всех клиентов:
+    token: уникальный ключ приложения
+    guid: некий уникальный ключ
+    https_verify: ключ verify в GET, POST запросах, по умолчанию 'False'
+    timeout: ключ timeout в GET, POST запросах
+
+    В каждом клиенте можно поменять
+    user_agent: версия веб клиента
+    dev_user_agent: 'Android' для ОС Android
+    dev_app_version: версия ОС
+
+    В запросах можно указывать client_id - тогда для каждого клиента будет своя request.Session с данными.
+    Чтобы кастомизировать данные нового клиента, вызовите: add_client(kwargs)
+    """
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self._clients = {'default': Client(**kwargs)}
+
+    def client(self, client_id='default', **kwargs):
+        if client_id and \
+            client_id not in self._clients:
+            k = self.kwargs
+            k.update(kwargs)
+            self._clients[client_id] = Client(**k)
+        return self._clients[client_id]
+
+    # one thread functions
+    def is_active(self):
+        return self.client().is_active()
+    def login(self, *args):
+        return self.client().login(*args)
+    def get_profile(self):
+        return self.client().get_profile()
+    def get_flats(self):
+        return self.client().get_flats()
+    def get_watercounters(self, *args):
+        return self.client().get_watercounters(*args)
+    def send_watercounters(self, *args):
+        return self.client().send_watercounters(*args)
+    def logout(self, *args):
+        return self.client().logout(*args)
 
 
-def get_profile_middlename(profile_json):
-    return profile_json['middlename']
+class Profile(object):
 
+    @staticmethod
+    def firstname(j):
+        return j['firstname']
 
-def get_profile_lastname(profile_json):
-    return profile_json['lastname']
+    @staticmethod
+    def middlename(j):
+        return j['middlename']
+
+    @staticmethod
+    def lastname(j):
+        return j['lastname']
+
 
 
 def get_profile_birthdate(profile_json):
