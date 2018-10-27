@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import argparse
-from emp_mos_api.mos import MosAPI, \
-    get_flat_id, get_flat_address, get_flat_paycode, get_flat_number, \
-    get_watercounters_by_type, get_watercounter_last_value, \
-    get_watercounter_id, watercounter_new_value_json, \
-    HOT_WATER, COLD_WATER
+from emp_mos_api import MosAPI, Water, Watercounter
 
 
 if __name__ == "__main__":
@@ -30,7 +26,8 @@ if __name__ == "__main__":
                  user_agent=args.user_agent,
                  guid=args.guid,
                  dev_user_agent=args.dev_user_agent,
-                 dev_app_version=args.dev_app_version)
+                 dev_app_version=args.dev_app_version,
+                 verify=True)
 
     try:
         api.login(args.login, args.pwd)
@@ -38,43 +35,40 @@ if __name__ == "__main__":
         flats = api.get_flats()
         assert flats, u'Добавьте квартиру в приложении Госуслуги Москвы'
         f = flats[0]
-        print('Адрес: ', get_flat_address(f))
-        print('Номер кв:  ', get_flat_number(f))
-        print('Номер платежки: ', get_flat_paycode(f))
+        print('Адрес: ', f['address'])
+        print('Номер кв:  ', f['flat_number'])
+        print('Номер платежки: ', f['paycode'])
 
-        json_data = api.get_watercounters(get_flat_id(f))
-        json_wc = api.get_watercounters(json_data)
+        counters = api.get_watercounters(f['flat_id'])['counters']
 
         new_values = []
 
-        #
-        hots_json = get_watercounters_by_type(HOT_WATER, json_wc) # разбираем ответ
-
+        hots_json = list(filter(lambda x: x['type'] == Water.HOT, counters))
         if hots_json:
-            hot_value = get_watercounter_last_value(hots_json[0])
+            hot_value = Watercounter.last_value(hots_json[0])
             print('Текущее показание горячей воды: {:.2f} m3'.format(hot_value))
 
             if args.hot:
-                new_values.append(watercounter_new_value_json(get_watercounter_id(hots_json[0]), args.hot))
+                new_values.append(Watercounter.serialize_for_send(hots_json[0], args.hot))
                 print('Новое показание горячей воды: {:.2f} m3'.format(args.hot))
         else:
             print('Не найден счетчик горячей воды')
 
         #
-        colds_json = get_watercounters_by_type(COLD_WATER, json_wc)
+        colds_json = list(filter(lambda x: x['type'] == Water.COLD, counters))
         if colds_json:
-            cold_value = get_watercounter_last_value(colds_json[0])
+            cold_value = Watercounter.last_value(colds_json[0])
             print('Текущее показание холодной воды: {:.2f} m3'.format(cold_value))
 
             if args.cold:
-                new_values.append(watercounter_new_value_json(get_watercounter_id(colds_json[0]), args.cold))
+                new_values.append(Watercounter.serialize_for_send(colds_json[0], args.cold))
                 print('Новое показание холодной воды: {:.2f} m3'.format(args.cold))
         else:
             print('Не найден счетчик холодной воды')
 
         if new_values:
-            api.send_watercounters(get_flat_id(f), new_values)
+            api.send_watercounters(f['flat_id'], new_values)
             print('Показания отправлены на сервер')
 
     finally:
-        api.logout()
+        api.logout()  #долго

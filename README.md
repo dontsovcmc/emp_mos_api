@@ -1,6 +1,7 @@
 ### Неофициальная библиотека для запросов к Единой мобильной платформе города Москвы 
 
 [Сайт](http://mosapps.mos.ru/dev)
+[Единая мобильная платформа города Москвы](http://serviceprovider.if.emp.msk.ru/default/auth)
 
 Для выполнения запросов требуются:
 - уникальный ключ вашего приложения (token), [выданный Правительством Москвы](http://mosapps.mos.ru/dev).
@@ -66,8 +67,3 @@ python https://bootstrap.pypa.io/get-pip.py
 перезагружаем терминал
 ```
 
-## Создание пакета
-```
-python setup.py sdist --formats=zip bdist_wheel   # или --formats=gztar
-twine upload dist/*
-```

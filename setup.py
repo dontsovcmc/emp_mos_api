@@ -7,12 +7,17 @@ from __future__ import print_function
 from setuptools import setup
 
 VERSION_MAJOR = 0
-VERSION_MINOR = 7
+VERSION_MINOR = 8
 
 ver = '%d.%d' % (VERSION_MAJOR, VERSION_MINOR)
 
 if __name__ == '__main__':
+    """
+    Создание пакета
 
+    python setup.py sdist --formats=zip bdist_wheel   # или --formats=gztar
+    twine upload dist/*
+    """
     with open('README.md', 'r') as fh:
         long_description = fh.read()
 
@@ -39,6 +44,6 @@ if __name__ == '__main__':
         license='MIT',
         platforms=['linux2', 'win32'],
         install_requires=[
-            'requests==2.19.1'
+            'requests>=2.19.1'
         ],
     )
