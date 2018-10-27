@@ -1,1 +1,3 @@
-from mos import MosAPI, AuthException
+
+from emp_mos_api.mos import MosAPI, Water, Watercounter, \
+    AuthException, EmpServerException
