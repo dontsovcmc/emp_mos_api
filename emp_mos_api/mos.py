@@ -277,7 +277,7 @@ class Client(object):
 
         ret = self.session.post('https://emp.mos.ru/v1.0/watercounters/addValues',
                                                      params={'token': self.token},
-                                                     headers=self.wheaders,
+                                                     headers=wheaders,
                                                      verify=self.verify,
                                                      timeout=self.timeout,
                                                      json=wcrequest)
@@ -286,7 +286,7 @@ class Client(object):
         self.raise_for_status(response)
         return response['result']
 
-    def logout(self):
+    def logout(self, timeout=None):
         """
         Почему то очень долго выполняется (5 сек)
         """
@@ -302,7 +302,7 @@ class Client(object):
             ret = self.session.post('https://emp.mos.ru/v1.0/auth/logout',
                          params={'token': self.token},
                          headers=self.headers,
-                         timeout=self.timeout,
+                         timeout=timeout or self.timeout,
                          json=logout_data)
 
             response = ret.json()
