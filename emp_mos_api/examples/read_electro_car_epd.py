@@ -1,5 +1,10 @@
-import time
-from mos import MosAPI, AuthException, EmpServerException
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+import argparse
+from emp_mos_api import MosAPI, AuthException, EmpServerException
+
+# Код написан общим для python2, python3 благодаря
+# http://python-future.org/compatible_idioms.html
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='emp.mos.ru API')
