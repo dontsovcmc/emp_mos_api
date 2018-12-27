@@ -64,7 +64,7 @@ fines = api.get_car_fines(sts)
 ```
 
 ## Примеры:
-[examples](https://github.com/monster1025/emp_mos_api)
+[examples](https://github.com/dontsovcmc/emp_mos_ru/tree/master/emp_mos_api/examples)
 
 
 ## Установка:
