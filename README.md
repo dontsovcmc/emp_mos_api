@@ -3,6 +3,8 @@
 [Сайт](http://mosapps.mos.ru/dev)
 [Единая мобильная платформа города Москвы](http://serviceprovider.if.emp.msk.ru/default/auth)
 
+Основано на https://github.com/dontsovcmc/emp_mos_api/
+
 Для выполнения запросов требуются:
 - уникальный ключ вашего приложения (token), [выданный Правительством Москвы](http://mosapps.mos.ru/dev).
 - некий guid (guid)
@@ -64,7 +66,7 @@ fines = api.get_car_fines(sts)
 ```
 
 ## Примеры:
-[examples](https://github.com/dontsovcmc/emp_mos_ru/tree/master/emp_mos_api/examples)
+[examples](https://github.com/monster1025/emp_mos_api)
 
 
 ## Установка:
