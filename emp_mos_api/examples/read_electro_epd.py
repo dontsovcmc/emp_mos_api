@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import argparse
+import time
 from emp_mos_api import MosAPI, AuthException, EmpServerException
 
 # Код написан общим для python2, python3 благодаря
@@ -17,8 +18,6 @@ if __name__ == "__main__":
     parser.add_argument('--login', help='your login (phone number: 7xxxxxxxxxx)')
     parser.add_argument('--pwd', help='your password')
 
-    parser.add_argument('--sts', help='your car sts')
-
     args = parser.parse_args()
 
     #
@@ -30,19 +29,8 @@ if __name__ == "__main__":
                      dev_app_version=args.dev_app_version,
                      timeout=6)
 
-        api.login(login, pwd)
+        api.login(args.login, args.pwd)
         p = api.get_profile()
-
-        car_fines = api.get_car_fines(args.sts)
-        unpaid = car_fines['unpaid']
-        print("Неоплаченных штрафов: {}".format(len(unpaid)))
-
-        print('ФИО: ', p['firstname'],
-              ' ', p['middlename'],
-              ' ', p['lastname'])
-        print('Дата рождения: ', p['birthdate'])
-        print('Телефон: ', p['msisdn'])
-        print('Эл. почта: ', p['email'])
 
         flats = api.get_flats()
 
@@ -69,7 +57,6 @@ if __name__ == "__main__":
                 epd_is_paid = epd[0]['is_paid']
                 print(" - Дата: {}, сумма: {}, оплачен: {}.".format(date, epd_total, epd_is_paid))
                 time.sleep(1)
-
 
             if f['electro_account'] != "":
                 electro = api.get_electrocounters(f['flat_id'])

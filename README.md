@@ -83,3 +83,7 @@ python https://bootstrap.pypa.io/get-pip.py
 перезагружаем терминал
 ```
 
+## Благодарности
+
+@monster1025
+

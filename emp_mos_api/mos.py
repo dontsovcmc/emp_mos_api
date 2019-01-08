@@ -4,6 +4,8 @@ import requests
 from datetime import datetime, tzinfo
 from copy import deepcopy
 
+API_V1_0 = 'https://emp.mos.ru/v1.0'
+API_V1_1 = 'https://emp.mos.ru/v1.1'
 
 class AuthException(Exception):
     pass
@@ -94,7 +96,7 @@ class Client(object):
             }
         }
 
-        ret = self.session.post('https://emp.mos.ru/v1.0/auth/virtualLogin',
+        ret = self.session.post(API_V1_0 + '/auth/virtualLogin',
                      params={'token': self.token},
                      headers={'Content-Type': 'application/json; charset=UTF-8',
                               'Connection': 'Keep-Alive',
@@ -128,7 +130,7 @@ class Client(object):
         """
         assert self.session_id
 
-        ret = self.session.get('https://emp.mos.ru/v1.0/profile/get',
+        ret = self.session.get(API_V1_0 + '/profile/get',
                                 params={'token': self.token,
                                         'info[guid]': self.guid,
                                         'auth[session_id]': self.session_id
@@ -159,7 +161,7 @@ class Client(object):
         """
         assert self.session_id
 
-        ret = self.session.get('https://emp.mos.ru/v1.0/flat/get',
+        ret = self.session.get(API_V1_0 + '/flat/get',
                                 params={'token': self.token,
                                         'info[guid]': self.guid,
                                         'auth[session_id]': self.session_id
@@ -234,7 +236,7 @@ class Client(object):
             }
         }
 
-        ret = self.session.post('https://emp.mos.ru/v1.0/watercounters/get',
+        ret = self.session.post(API_V1_0 + '/watercounters/get',
                                  params={'token': self.token},
                                  headers=wheaders,
                                  verify=self.verify,
@@ -275,7 +277,7 @@ class Client(object):
                         'session_id': self.session_id
                      }}
 
-        ret = self.session.post('https://emp.mos.ru/v1.0/watercounters/addValues',
+        ret = self.session.post(API_V1_0 + '/watercounters/addValues',
                                                      params={'token': self.token},
                                                      headers=wheaders,
                                                      verify=self.verify,
@@ -329,7 +331,7 @@ class Client(object):
             }
         }
 
-        ret = self.session.post('https://emp.mos.ru/v1.0/electrocounters/get',
+        ret = self.session.post(API_V1_0 + '/electrocounters/get',
                                  params={'token': self.token},
                                  headers=wheaders,
                                  verify=self.verify,
@@ -371,7 +373,7 @@ class Client(object):
                      'auth': {
                         'session_id': self.session_id
                      }}
-        ret = self.session.post('https://emp.mos.ru/v1.0/electrocounters/addValues',
+        ret = self.session.post(API_V1_0 + '/electrocounters/addValues',
                                                      params={'token': self.token},
                                                      headers=wheaders,
                                                      verify=self.verify,
@@ -417,7 +419,7 @@ class Client(object):
             }
         }
 
-        ret = self.session.post('https://emp.mos.ru/v1.1/epd/get',
+        ret = self.session.post(API_V1_1 + '/epd/get',
                                  params={'token': self.token},
                                  headers=wheaders,
                                  verify=self.verify,
@@ -465,7 +467,7 @@ class Client(object):
             }
         }
 
-        ret = self.session.post('https://emp.mos.ru/v1.0/offence/getOffence',
+        ret = self.session.post(API_V1_0 + '/offence/getOffence',
                                  params={'token': self.token},
                                  headers=wheaders,
                                  verify=self.verify,
@@ -489,7 +491,7 @@ class Client(object):
                     'session_id': self.session_id
                 }
             }
-            ret = self.session.post('https://emp.mos.ru/v1.0/auth/logout',
+            ret = self.session.post(API_V1_0 + '/auth/logout',
                          params={'token': self.token},
                          headers=self.headers,
                          timeout=timeout or self.timeout,
