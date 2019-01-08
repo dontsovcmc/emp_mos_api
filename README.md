@@ -46,6 +46,22 @@ water = api.get_watercounters(flat_id)
 ```
 api.send_watercounters(flat_id, new_values)
 ```
+### Получить список счетчиков электроэнергии
+```
+electro = api.get_electrocounters(flat_id)
+```
+### Отправить новые показания электроэнергии
+```
+api.send_electrocounters(flat_id, new_values)
+```
+### Получить епд
+```
+epd = api.get_epd(flat_id, period, is_debit)
+```
+### Получить штрафы
+```
+fines = api.get_car_fines(sts)
+```
 
 ## Примеры:
 [examples](https://github.com/dontsovcmc/emp_mos_ru/tree/master/emp_mos_api/examples)

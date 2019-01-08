@@ -53,7 +53,7 @@ class Client(object):
         }
         :return:
         """
-        print('Exec time:', answer['execTime'])
+        # print('Exec time:', answer['execTime'])
         if answer['errorCode'] == 401:
             raise AuthException()
 
@@ -286,6 +286,196 @@ class Client(object):
         self.raise_for_status(response)
         return response['result']
 
+    def get_electrocounters(self, flat_id):
+        """
+        :param flat_id: unicode string from flat_response
+                        response[0]['flat_id']
+        :return:
+        {
+            "address": "город ...",
+            "electro_account": "851xxxx475",
+            "electro_device": "04xxx17",
+            "balance": 0,
+            "is_debt": false,
+            "description": "Внимание! Передача показаний возможна с 15 по 26 число месяца. При вводе текущих показаний обращайте внимание на значность счетчиков. В случае если показания введены с неверной значностью (большей, чем значность счетчика), они не будут загружены.",
+            "sh_znk": 5,
+            "zones": [{
+                "name": "T1",
+                "value": "6887"
+            }],
+            "intervals": [{
+                "name": "T1",
+                "value": "00:00-23:59"
+            }]
+        }
+        """
+        assert self.session_id
+        wheaders = deepcopy(self.headers)
+        wheaders.update({
+                'X-Clears-tags': 'ELECTRO_COUNTERS',
+                'X-Cache-ov-mode': 'DEFAULT',
+                'Content-Type': 'application/json; charset=UTF-8' })
+
+        wcrequest = {
+            'flat_id': flat_id,
+            'is_widget': False,
+            'info': {
+                'guid': self.guid,
+                'user_agent': self.dev_user_agent,
+                'app_version': self.dev_app_version
+            },
+            'auth': {
+                'session_id': self.session_id
+            }
+        }
+
+        ret = self.session.post('https://emp.mos.ru/v1.0/electrocounters/get',
+                                 params={'token': self.token},
+                                 headers=wheaders,
+                                 verify=self.verify,
+                                 timeout=self.timeout,
+                                 json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
+    def send_electrocounters(self, flat_id, counters_data):
+        """
+        :param flat_id: flat_response['flat_id']
+        :param counters_data: array of
+            [{
+                'counter_id': u'123456', # ['counters'][0]['counterId']
+                'period': datetime.now().strftime("%Y-%m-%d"),
+                'indication': 'xxx,xx'
+            }, {
+                ...
+            }]
+        :return:
+        """
+        assert self.session_id
+
+        wheaders = deepcopy(self.headers)
+        wheaders.update({
+                'X-Clears-tags': 'ELECTRO_COUNTERS',
+                'Content-Type': 'application/json; charset=UTF-8'
+            })
+
+        wcrequest = {'flat_id': flat_id,
+                     'counters_data': counters_data,
+                     'info': {
+                        'guid': self.guid,
+                        'user_agent': self.dev_user_agent,
+                        'app_version': self.dev_app_version
+                     },
+                     'auth': {
+                        'session_id': self.session_id
+                     }}
+        ret = self.session.post('https://emp.mos.ru/v1.0/electrocounters/addValues',
+                                                     params={'token': self.token},
+                                                     headers=wheaders,
+                                                     verify=self.verify,
+                                                     timeout=self.timeout,
+                                                     json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
+    def get_epd(self, flat_id, period, is_debt=True):
+        """
+        :param flat_id: unicode string from flat_response
+                        response[0]['flat_id']
+        :param period: unicode string represents date in 27.09.2018 format
+        :param is_debt: True/False
+        :return:
+        {
+            "is_debt": true,
+            "is_paid": true,
+            "amount": 2982.77,
+            "service_code": "emp.zkh",
+            "insurance": 61.93,
+            "ammount_insurance": 3044.7
+        }
+        """
+        assert self.session_id
+        wheaders = deepcopy(self.headers)
+        wheaders.update({
+                'X-Clears-tags': 'EPD',
+                'X-Cache-ov-mode': 'DEFAULT',
+                'Content-Type': 'application/json; charset=UTF-8' })
+
+        wcrequest = {
+            'flat_id': flat_id,
+            'period': period,
+            'is_debt': is_debt,
+            'info': {
+                'guid': self.guid
+            },
+            'auth': {
+                'session_id': self.session_id
+            }
+        }
+
+        ret = self.session.post('https://emp.mos.ru/v1.1/epd/get',
+                                 params={'token': self.token},
+                                 headers=wheaders,
+                                 verify=self.verify,
+                                 timeout=self.timeout,
+                                 json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
+    def get_car_fines(self, sts_number):
+        """
+        :param sts_number: unicode string contains car sts_numer
+        :return:
+        {
+            "paid": [{
+                "seriesAndNumber": "xxxxx",
+                "date": "2018-08-30+03:00",
+                "offence_place": "МОСКВА Г.   МКАД,xxxx, ВНЕШНЯЯ СТОРОНА",
+                "offenceType": "12.9ч.2 - Превышение установленной скорости движения транспортного средства на величину от 20 до 40 километров в час  ",
+                "cost": "500",
+                "is_discount": false,
+                "drive_license": null,
+                "sts_number": "xxxxxxx",
+                "executionState": "Исполнено",
+                "is_fssp": false
+            }],
+            "unpaid": []
+        }
+        """
+        assert self.session_id
+        wheaders = deepcopy(self.headers)
+        wheaders.update({
+                'X-Clears-tags': 'FORCE_NETWORK',
+                'X-Cache-ov-mode': 'DEFAULT',
+                'Content-Type': 'application/json; charset=UTF-8' })
+
+        wcrequest = {
+            'sts_number': sts_number,
+            'info': {
+                'guid': self.guid
+            },
+            'auth': {
+                'session_id': self.session_id
+            }
+        }
+
+        ret = self.session.post('https://emp.mos.ru/v1.0/offence/getOffence',
+                                 params={'token': self.token},
+                                 headers=wheaders,
+                                 verify=self.verify,
+                                 timeout=self.timeout,
+                                 json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
     def logout(self, timeout=None):
         """
         Почему то очень долго выполняется (5 сек)
@@ -352,7 +542,14 @@ class MosAPI(object):
         return self.client().get_watercounters(*args)
     def send_watercounters(self, *args):
         return self.client().send_watercounters(*args)
-
+    def get_electrocounters(self, *args):
+        return self.client().get_electrocounters(*args)
+    def send_electrocounters(self, *args):
+        return self.client().send_electrocounters(*args)
+    def get_epd(self, *args):
+        return self.client().get_epd(*args)
+    def get_car_fines(self, *args):
+        return self.client().get_car_fines(*args)
 
 class Water():
     COLD = 1
