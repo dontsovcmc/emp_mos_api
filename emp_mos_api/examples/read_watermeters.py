@@ -46,7 +46,10 @@ if __name__ == "__main__":
         hots_json = list(filter(lambda x: x['type'] == Water.HOT, counters))
         if hots_json:
             hot_value = Watercounter.last_value(hots_json[0])
-            print('Текущее показание горячей воды: {:.2f} m3'.format(hot_value))
+            if hot_value:
+                print('Текущее показание горячей воды: {:.2f} m3'.format(hot_value))
+            else:
+                print('Показания горячей воды не передавались больше 3-х месяцев')
 
             if args.hot:
                 new_values.append(Watercounter.serialize_for_send(hots_json[0], args.hot))
@@ -58,7 +61,10 @@ if __name__ == "__main__":
         colds_json = list(filter(lambda x: x['type'] == Water.COLD, counters))
         if colds_json:
             cold_value = Watercounter.last_value(colds_json[0])
-            print('Текущее показание холодной воды: {:.2f} m3'.format(cold_value))
+            if cold_value:
+                print('Текущее показание холодной воды: {:.2f} m3'.format(cold_value))
+            else:
+                print('Показания холодной воды не передавались больше 3-х месяцев')
 
             if args.cold:
                 new_values.append(Watercounter.serialize_for_send(colds_json[0], args.cold))

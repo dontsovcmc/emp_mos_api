@@ -61,8 +61,8 @@ class Client(object):
 
         if answer['errorCode'] != 0:
             if answer['errorMessage']:
-                raise EmpServerException(u'{0} (code:{1})'.format(answer['errorMessage'], answer['errorCode']))
-            raise EmpServerException(u'code:{0}'.format(answer['errorCode']))
+                raise EmpServerException('{0} (code:{1})'.format(answer['errorMessage'].encode('utf-8'), answer['errorCode']))
+            raise EmpServerException('code:{0}'.format(answer['errorCode']))
 
     def is_active(self):
         """
@@ -593,6 +593,7 @@ class Watercounter():
         alphabetical sort data =)
         :param counter: counter JSON
         :return: float or None
+        None - когда показания не сданы более 3-х месяцев
         """
         indications = counter['indications']
         indications.sort(key=lambda x: x['period'])
