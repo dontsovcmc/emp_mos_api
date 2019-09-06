@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
+
 from __future__ import print_function
-import requests
+import time
 from datetime import datetime, tzinfo
+import requests
 from copy import deepcopy
 
 API_V1_0 = 'https://emp.mos.ru/v1.0'
 API_V1_1 = 'https://emp.mos.ru/v1.1'
 
+
 class AuthException(Exception):
     pass
+
 
 class EmpServerException(Exception):
     pass
@@ -27,14 +31,40 @@ class Client(object):
         self.timeout = kwargs.get('timeout', 3.0)
 
         self.session_id = None  # emp mos ru
-        self.user_agent = kwargs.get('user_agent')
+        self.user_agent = kwargs.get('user_agent', 'okhttp/3.8.1')
         self.dev_app_version = kwargs.get('dev_app_version')
         self.dev_user_agent = kwargs.get('dev_user_agent')
-        self.headers = {'Cache-Control': 'no-cache',
-                   'Host': 'emp.mos.ru',
-                   'Connection': 'Keep-Alive',
-                   'Accept-Encoding': 'gzip',
-                   'User-Agent': self.user_agent}
+
+        self.post_request_data = {
+            'info': {
+                'guid': self.guid,
+                'user_agent': self.dev_user_agent,
+                'app_version': self.dev_app_version
+            },
+            'auth': {
+                'session_id': self.session_id
+            }
+        }
+
+
+        # 3.8.1.216(108)
+        #self.dev_mobile = kwargs.get('dev_mobile')
+        #self.info_field = {
+        #    'app_version': self.dev_app_version,
+        #    'guid': self.guid,
+        #    'mobile': self.dev_mobile,
+        #    'session_id': None,
+        #    'user_agent': self.dev_user_agent
+        #}
+
+        self.headers = {
+            'Cache-Control': 'no-cache',
+            'Host': 'emp.mos.ru',
+            'Connection': 'Keep-Alive',
+            'Accept-Encoding': 'gzip',
+            'User-Agent': self.user_agent
+        }
+
         self.pheaders = deepcopy(self.headers)
         self.pheaders.update({
             'X-Cache-ov': '15552000',
@@ -56,8 +86,9 @@ class Client(object):
         :return:
         """
         # print('Exec time:', answer['execTime'])
+
         if answer['errorCode'] == 401:
-            raise AuthException()
+            raise AuthException('Ошибка авторизации')
 
         if answer['errorCode'] != 0:
             if answer['errorMessage']:
@@ -87,7 +118,8 @@ class Client(object):
             'device_info': {
                 'guid': self.guid,
                 'user_agent': self.dev_user_agent,
-                'app_version': self.dev_app_version
+                'app_version': self.dev_app_version,
+                #'mobile': self.dev_mobile  # 3.8.1.216(108)
             },
             'auth': {
                 'login': telephone,
@@ -112,6 +144,7 @@ class Client(object):
         response = ret.json()
         self.raise_for_status(response)
         self.session_id = response['session_id']
+        self.post_request_data['auth']['session_id'] = self.session_id
         return response['result']
 
     def get_profile(self):
@@ -174,6 +207,134 @@ class Client(object):
         self.raise_for_status(response)
         return response['result']
 
+    def address_search(self, pattern, limit=100):
+        """
+        :param pattern: строка шаблон для поиска
+        :param limit: сколько ответов выводить
+        :return:
+        {
+            "address": "",
+            "description": "",
+            "district": "",
+            "fullMatch": False,
+            "unad": 1,
+            "unum": 123456
+        }
+        """
+        assert self.session_id
+        wheaders = deepcopy(self.headers)
+        wheaders.update({'Content-Type': 'application/json; charset=UTF-8'})
+
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
+            'limit': limit,
+            'pattern': pattern,
+        })
+
+        ret = self.session.post(API_V1_1 + '/flat/addressSearch',
+                                 params={'token': self.token},
+                                 headers=wheaders,
+                                 verify=self.verify,
+                                 timeout=self.timeout,
+                                 json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
+    def flat_delete(self, flat_id):
+        """
+        Удалить квартиру
+        :param flat_id: unicode string from flat_response
+            response[0]['flat_id']
+        :return: Null
+        """
+
+        assert self.session_id
+        wheaders = deepcopy(self.headers)
+        wheaders.update({
+                'X-Clears-tags': 'WIDGETS,EPD,ELECTRO_COUNTERS,WATER_COUNTERS,APARTMENT, EPD_WIDGET,ACCRUALS_WIDGET',
+                'Content-Type': 'application/json; charset=UTF-8' })
+
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
+            'flat_id': flat_id
+        })
+
+        ret = self.session.post(API_V1_0 + '/flat/delete',
+                                params={'token': self.token},
+                                headers=wheaders,
+                                verify=self.verify,
+                                timeout=self.timeout,
+                                json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
+    def flat_add(self, name, unom, unad, address, flat_number, paycode):
+        """
+        Добавление квартиры. Перед добавлением надо узнать unom
+        :param name: имя квартиры. любое
+        :param unom: INT из запроса addressSearch
+        :param unad: INT из запроса addressSearch
+        :param address: Любой
+        :param flat_number: Номер квартиры. Любой. Но для отправки показаний нужен точный.
+        :param paycode: Код плательщика
+        :param electro_account: Номер счета Мосэнергосбыта
+        :param electro_device: Серийный номер счетчика. Если заполнен, должен и номер Мосэнергосбыта быть заполнен.
+        :return:
+
+        {
+            "flat_id":"23611975",
+            "name":"",
+            "address":"",
+            "flat_number":"111",
+            "unom":"3802879",
+            "unad":"1",
+            "paycode":"1234567890",
+            "electro_account":"",
+            "electro_device":"",
+            "intercom":"",
+            "floor":"",
+            "entrance_number":"",
+            "alias":"",
+            "epd":"1234567890",
+            "flat":"111",
+            "building":"",
+            "street": равно address
+        }
+        """
+        assert self.session_id
+        wheaders = deepcopy(self.headers)
+        wheaders.update({
+                'X-Clears-tags': 'WIDGETS,EPD,ELECTRO_COUNTERS,WATER_COUNTERS,APARTMENT, EPD_WIDGET,ACCRUALS_WIDGET',
+                'Content-Type': 'application/json; charset=UTF-8'
+        })
+
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
+            'a': 0,
+            'address': address,
+            'can_update': False,
+            'flat_number': flat_number,
+            'name': name,
+            'paycode': paycode,
+            'unad': unad,
+            'unom': unom
+        })
+
+        ret = self.session.post(API_V1_0 + '/flat/add',
+                                params={'token': self.token},
+                                headers=wheaders,
+                                verify=self.verify,
+                                timeout=self.timeout,
+                                json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
     def get_watercounters(self, flat_id):
         """
         :param flat_id: unicode string from flat_response
@@ -225,16 +386,11 @@ class Client(object):
                 'X-Cache-ov-mode': 'DEFAULT',
                 'Content-Type': 'application/json; charset=UTF-8' })
 
-        wcrequest = {
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
             'flat_id': flat_id,
-            'is_widget': False,
-            'info': {
-                'guid': self.guid
-            },
-            'auth': {
-                'session_id': self.session_id
-            }
-        }
+            'is_widget': False
+        })
 
         ret = self.session.post(API_V1_0 + '/watercounters/get',
                                  params={'token': self.token},
@@ -268,14 +424,11 @@ class Client(object):
                 'Content-Type': 'application/json; charset=UTF-8'
             })
 
-        wcrequest = {'flat_id': flat_id,
-                     'counters_data': counters_data,
-                     'info': {
-                        'guid': self.guid
-                     },
-                     'auth': {
-                        'session_id': self.session_id
-                     }}
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
+            'flat_id': flat_id,
+            'counters_data': counters_data
+        })
 
         ret = self.session.post(API_V1_0 + '/watercounters/addValues',
                                                      params={'token': self.token},
@@ -318,18 +471,11 @@ class Client(object):
                 'X-Cache-ov-mode': 'DEFAULT',
                 'Content-Type': 'application/json; charset=UTF-8' })
 
-        wcrequest = {
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
             'flat_id': flat_id,
             'is_widget': False,
-            'info': {
-                'guid': self.guid,
-                'user_agent': self.dev_user_agent,
-                'app_version': self.dev_app_version
-            },
-            'auth': {
-                'session_id': self.session_id
-            }
-        }
+        })
 
         ret = self.session.post(API_V1_0 + '/electrocounters/get',
                                  params={'token': self.token},
@@ -363,16 +509,12 @@ class Client(object):
                 'Content-Type': 'application/json; charset=UTF-8'
             })
 
-        wcrequest = {'flat_id': flat_id,
-                     'counters_data': counters_data,
-                     'info': {
-                        'guid': self.guid,
-                        'user_agent': self.dev_user_agent,
-                        'app_version': self.dev_app_version
-                     },
-                     'auth': {
-                        'session_id': self.session_id
-                     }}
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
+            'flat_id': flat_id,
+            'counters_data': counters_data
+        })
+
         ret = self.session.post(API_V1_0 + '/electrocounters/addValues',
                                                      params={'token': self.token},
                                                      headers=wheaders,
@@ -407,17 +549,12 @@ class Client(object):
                 'X-Cache-ov-mode': 'DEFAULT',
                 'Content-Type': 'application/json; charset=UTF-8' })
 
-        wcrequest = {
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
             'flat_id': flat_id,
             'period': period,
             'is_debt': is_debt,
-            'info': {
-                'guid': self.guid
-            },
-            'auth': {
-                'session_id': self.session_id
-            }
-        }
+        })
 
         ret = self.session.post(API_V1_1 + '/epd/get',
                                  params={'token': self.token},
@@ -429,6 +566,106 @@ class Client(object):
         response = ret.json()
         self.raise_for_status(response)
         return response['result']
+
+    def get_eepd(self, flat_id, period, epd_type='current', rid=None):
+        """
+        Запросить электронный ЕПД (pdf). Первый запрос возвращает rid и документ начинает готовиться.
+        Последующие запросы будут либо пустые, либо содержать ссылку на PDF + расшифровку полей.
+
+        :param flat_id: unicode string from flat_response
+                        response[0]['flat_id']
+        :param period: unicode string represents date in 27.09.2018 format
+        :param epd_type: current
+        :param rid: Если None, то это первый запрос. В ответе будет rid, который нужно добавить в последующие запросы,
+            пока документ готовится.
+        :return:
+        Первый ответ и последующие , пока не готов документ
+        {
+            "rid": GUID,
+        }
+
+        {
+            "pdf": Ссылка на pdf,
+            "title": "Платежный документ",
+            "sections": [
+                {
+                    "title": "Начисления",
+                    "elements": {
+                        "address": "xxxx",
+                        "epd": 123455,
+                        "hint": "text",
+                        "payment_elements": [
+                            ],
+                        "period": "DD-месяц-YYYY",
+                        "total_elements": [
+                        ]
+                    }
+                },
+                {
+                    "title": "Информация",
+                    "elements": [
+                        {
+                            "title": "text",
+                            "body": "text"
+                        },
+                        {
+                        }
+                    ]
+                }
+            ]
+        }
+
+        """
+        assert self.session_id
+        wheaders = deepcopy(self.headers)
+        wheaders.update({
+                'Content-Type': 'application/json; charset=UTF-8'})
+
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
+            'flat_id': flat_id,
+            'period': period,
+            'type': epd_type,
+        })
+
+        if rid:
+            wcrequest.update({'rid': rid})
+
+        ret = self.session.post(API_V1_0 + '/eepd/get',
+                                 params={'token': self.token},
+                                 headers=wheaders,
+                                 verify=self.verify,
+                                 timeout=self.timeout,
+                                 json=wcrequest)
+
+        response = ret.json()
+        self.raise_for_status(response)
+        return response['result']
+
+    def get_eepd_wait_result(self, flat_id, period, timeout=10.0):
+        """
+        Запросить электронный ЕПД (pdf) и дождаться результата
+
+        :param flat_id: unicode string from flat_response
+                        response[0]['flat_id']
+        :param period: unicode string represents date in 27.09.2018 format
+        :param timeout: сколько ждем в секундах результата
+        """
+        start = time.time()
+
+        rid = None
+        result = None
+        while not result and time.time() - start < timeout:
+            time.sleep(2.0)
+
+            ret = self.get_eepd(flat_id, period, 'current', rid)
+            if 'rid' in ret:
+                rid = ret['rid']
+
+            if 'pdf' in ret:
+                result = deepcopy(ret)
+
+        return result
 
     def get_car_fines(self, sts_number):
         """
@@ -455,17 +692,12 @@ class Client(object):
         wheaders.update({
                 'X-Clears-tags': 'FORCE_NETWORK',
                 'X-Cache-ov-mode': 'DEFAULT',
-                'Content-Type': 'application/json; charset=UTF-8' })
+                'Content-Type': 'application/json; charset=UTF-8'})
 
-        wcrequest = {
-            'sts_number': sts_number,
-            'info': {
-                'guid': self.guid
-            },
-            'auth': {
-                'session_id': self.session_id
-            }
-        }
+        wcrequest = deepcopy(self.post_request_data)
+        wcrequest.update({
+            'sts_number': sts_number
+        })
 
         ret = self.session.post(API_V1_0 + '/offence/getOffence',
                                  params={'token': self.token},
@@ -483,14 +715,8 @@ class Client(object):
         Почему то очень долго выполняется (5 сек)
         """
         if self.session_id:
-            logout_data = {
-                'info': {
-                    'guid': self.guid
-                },
-                'auth': {
-                    'session_id': self.session_id
-                }
-            }
+            logout_data = deepcopy(self.post_request_data)
+
             ret = self.session.post(API_V1_0 + '/auth/logout',
                          params={'token': self.token},
                          headers=self.headers,
@@ -521,8 +747,7 @@ class MosAPI(object):
         self._clients = {'default': Client(**kwargs)}
 
     def client(self, client_id='default', **kwargs):
-        if client_id and \
-            client_id not in self._clients:
+        if client_id and client_id not in self._clients:
             k = self.kwargs
             k.update(kwargs)
             self._clients[client_id] = Client(**k)
@@ -531,27 +756,54 @@ class MosAPI(object):
     # if only one client
     def is_active(self):
         return self.client().is_active()
+
     def login(self, *args):
         return self.client().login(*args)
+
     def logout(self, *args):
         return self.client().logout(*args)
 
     def get_profile(self):
         return self.client().get_profile()
+
+    # Квартиры
     def get_flats(self):
         return self.client().get_flats()
+
+    def flat_delete(self, *args):
+        return self.client().flat_delete(*args)
+
+    def flat_add(self, *args):
+        return self.client().flat_add(*args)
+
+    def address_search(self, *args):
+        return self.client().address_search(*args)
+
+    # Счетчики воды
     def get_watercounters(self, *args):
         return self.client().get_watercounters(*args)
+
     def send_watercounters(self, *args):
         return self.client().send_watercounters(*args)
+
+    # Счетчики электроэнергии
     def get_electrocounters(self, *args):
         return self.client().get_electrocounters(*args)
+
     def send_electrocounters(self, *args):
         return self.client().send_electrocounters(*args)
+
+    # Единый платежный документ
     def get_epd(self, *args):
         return self.client().get_epd(*args)
+
+    def get_eepd(self, *args):
+        return self.client().get_eepd(*args)
+
+    # Штрафы
     def get_car_fines(self, *args):
         return self.client().get_car_fines(*args)
+
 
 class Water():
     COLD = 1
