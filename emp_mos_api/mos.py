@@ -871,8 +871,9 @@ class Watercounter():
         :param counter: counter JSON
         :return: datetime с временной зоной
         """
-        checkup = counter['checkup']
-        d = datetime.strptime(checkup, '%Y-%m-%d%z')  #'checkup': '2023-09-25+03:00'
+        checkup = counter['checkup'].split('+')[0]  # python 3.6 support https://stackoverflow.com/questions/53291250/python-3-6-datetime-strptime-returns-error-while-python-3-7-works-well
+                                                    # ValueError: time data '2023-08-08+03:00' does not match format '%Y-%m-%d%z'↵"
+        d = datetime.strptime(checkup, '%Y-%m-%d')  #'checkup': '2023-09-25+03:00'
         return d
 
     @staticmethod
