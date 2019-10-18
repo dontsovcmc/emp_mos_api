@@ -34,10 +34,29 @@ api.logout()
 ```
 response = api.get_profile()
 ```
+### Поиск адреса по подстроке
+```
+adresses = api.address_search(pattern)
+```
+  
 ### Получить список квартир
 ```
 flats = api.get_flats()
 ```
+### Удалить квартиру
+```
+api.flat_delete(flat_id)
+```
+### Добавить квартиру
+```
+api.flat_add(name, unom, unad, address, flat_number, paycode)
+```
+### Получить электронный платежный документ
+```
+api.get_eepd_wait_result(flat_id, period, timeout):
+
+```
+
 ### Получить список счетчиков воды
 ```
 water = api.get_watercounters(flat_id)
@@ -62,6 +81,8 @@ epd = api.get_epd(flat_id, period, is_debit)
 ```
 fines = api.get_car_fines(sts)
 ```
+
+
 
 ## Примеры:
 [examples](https://github.com/dontsovcmc/emp_mos_ru/tree/master/emp_mos_api/examples)

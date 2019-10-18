@@ -802,8 +802,9 @@ class MosAPI(object):
     def get_epd(self, *args):
         return self.client().get_epd(*args)
 
-    def get_eepd(self, *args):
-        return self.client().get_eepd(*args)
+    # Сформировать pdf Единый платежный документ
+    def get_eepd_wait_result(self, *args):
+        return self.client().get_eepd_wait_result(*args)
 
     # Штрафы
     def get_car_fines(self, *args):
