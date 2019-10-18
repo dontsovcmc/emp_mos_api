@@ -26,6 +26,7 @@ if __name__ == '__main__':
         version=ver,
         description=__doc__.replace('\n', '').strip(),
         long_description=long_description,
+        long_description_content_type='text/markdown',
         author='Dontsov E.',
         author_email='dontsovcmc@gmail.com',
         url='https://github.com/dontsovcmc/emp_mos_api',
