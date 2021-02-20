@@ -43,7 +43,6 @@ if __name__ == "__main__":
             print('Номер кв: ', f['flat_number'])
             print('Номер платежки: ', f['paycode'])
 
-
     except AuthException as err:
         print('Некорректный логин или пароль')
     except EmpServerException as err:

@@ -16,6 +16,8 @@ if __name__ == "__main__":
     parser.add_argument('--login', help='your login (phone number: 7xxxxxxxxxx)')
     parser.add_argument('--pwd', help='your password')
 
+    parser.add_argument('--flat_id', help='id квартиры на сервере. если не указывать, отправится в 1ю.')
+
     parser.add_argument('--hot', type=float, help='Hot water new value')
     parser.add_argument('--cold', type=float, help='Cold water new value')
 
@@ -32,14 +34,19 @@ if __name__ == "__main__":
     try:
         api.login(args.login, args.pwd)
 
-        flats = api.get_flats()
-        assert flats, u'Добавьте квартиру в приложении Госуслуги Москвы'
-        f = flats[0]
-        print('Адрес: ', f['address'])
-        print('Номер кв:  ', f['flat_number'])
-        print('Номер платежки: ', f['paycode'])
+        if not args.flat_id:
+            flats = api.get_flats()
+            assert flats, u'Добавьте квартиру в приложении Госуслуги Москвы'
+            f = flats[0]
+            print('Адрес: ', f['address'])
+            print('Номер кв:  ', f['flat_number'])
+            print('Номер платежки: ', f['paycode'])
 
-        counters = api.get_watercounters(f['flat_id'])['counters']
+            flat_id = f['flat_id']
+        else:
+            flat_id = args.flat_id
+
+        counters = api.get_watercounters(flat_id)['counters']
 
         new_values = []
 
@@ -73,7 +80,7 @@ if __name__ == "__main__":
             print('Не найден счетчик холодной воды')
 
         if new_values:
-            api.send_watercounters(f['flat_id'], new_values)
+            api.send_watercounters(flat_id, new_values)
             print('Показания отправлены на сервер')
 
     finally:

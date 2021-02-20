@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+import six
 import time
 from datetime import datetime, tzinfo
 import requests
@@ -15,10 +16,46 @@ class AuthException(Exception):
 
 
 class EmpServerException(Exception):
+    def __init__(self, message, code):
+        self.message = message
+        self.code = code
+        if six.PY2:
+            super(Exception, self).__init__('{0} (code:{1})'.format(self.message.encode('utf-8'), self.code))
+        else:
+            super().__init__('{0} (code:{1})'.format(self.message, self.code))
+
+
+class EmpCounterNotVerifiedException(EmpServerException):
     """
     'errorCode' 'errorMessage'
     3454: 'Не удалось передать показания за сентябрь по счётчикам <серийный номер>: "Невозможно внести показание, поскольку не введены показания за три и более месяца, предшествующих текущему. Для возобновления
            удалённой передачи показаний Вам следует обратиться в Центр госуслуг/ГКУ ИС района.
+    """
+    pass
+
+
+class EmpAlreadySendException(EmpServerException):
+    """Не удалось передать показания за X по счётчикам 12345678:
+    "Вы не можете изменить показания, переданные через портал mos.ru или введенные сотрудниками" \
+    " Центров госуслуг/ГКУ ИС." 12345678: "Редактируемое показание принято к расчёту." '
+    """
+    pass
+
+
+class EmpHugeValueException(EmpServerException):
+    """
+    Не удалось передать показания за февраль по счётчикам 123456:
+    "Не допускается внесение данных, в несколько раз превышающих нормативы водопотребления,
+    установленные Правительством Москвы."  (code:3454)
+    """
+    pass
+
+class EmpValueLessException(EmpServerException):
+    """
+    Не удалось передать показания за февраль по счётчикам 123456:
+    "Вносимое показание меньше предыдущего. Проверьте корректность вносимого показания.
+    В случае, если передаваемые данные корректны, Вам следует обратиться в
+    Центр госуслуг/ГКУ ИС района для уточнения причин ошибки."  (code:3454)
     """
     pass
 
@@ -92,13 +129,24 @@ class Client(object):
         """
         # print('Exec time:', answer['execTime'])
 
-        if answer['errorCode'] == 401:
+        code = answer['errorCode']
+        msg = answer['errorMessage'] if 'errorMessage' in answer and answer['errorMessage'] else ''
+
+        if code == 401:
             raise AuthException('Ошибка авторизации')
 
-        if answer['errorCode'] != 0:
-            if answer['errorMessage']:
-                raise EmpServerException('{0} (code:{1})'.format(answer['errorMessage'].encode('utf-8'), answer['errorCode']))
-            raise EmpServerException('code:{0}'.format(answer['errorCode']))
+        if code == 3454:
+            if u'показание принято к расчёту' in msg:
+                raise EmpAlreadySendException(msg, code)
+            elif u'Не допускается внесение данных, в несколько раз превышающих нормативы водопотребления' in msg:
+                raise EmpHugeValueException(msg, code)
+            elif u'Вносимое показание меньше предыдущего' in msg:
+                raise EmpValueLessException(msg, code)
+            elif u'Истёк срок поверки прибора учёта' in msg:
+                raise EmpCounterNotVerifiedException(msg, code)
+
+        if code != 0:
+            raise EmpServerException(msg, code)
 
     def is_active(self):
         """
@@ -811,22 +859,26 @@ class MosAPI(object):
         return self.client().get_car_fines(*args)
 
 
-class Water():
+class Water:
     COLD = 1
     HOT = 2
 
     @staticmethod
     def water_abbr(water):
-        if water == Water.COLD: return u'ХВС'
-        elif water == Water.HOT: return u'ГВС'
+        if water == Water.COLD:
+            return u'ХВС'
+        elif water == Water.HOT:
+            return u'ГВС'
 
     @staticmethod
     def name(water):
-        if water == Water.COLD: return u'холодная вода'
-        elif water == Water.HOT: return u'горячая вода'
+        if water == Water.COLD:
+            return u'холодная вода'
+        elif water == Water.HOT:
+            return u'горячая вода'
 
 
-class Watercounter():
+class Watercounter:
     """
     [{ 'counterId': 1437373, # внутреннее id счетчика
        'type': 1,            # тип воды
