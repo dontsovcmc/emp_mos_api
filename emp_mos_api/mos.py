@@ -9,7 +9,7 @@ from copy import deepcopy
 
 API_V1_0 = 'https://emp.mos.ru/v1.0'
 API_V1_1 = 'https://emp.mos.ru/v1.1'
-
+API_V1_2 = 'https://emp.mos.ru/v1.2'
 
 class AuthException(Exception):
     pass
@@ -579,21 +579,27 @@ class Client(object):
         self.raise_for_status(response)
         return response['result']
 
-    def get_epd(self, flat_id, period, is_debt=True):
+    def get_epd(self, flat_id, begin_period, end_period):
         """
         :param flat_id: unicode string from flat_response
                         response[0]['flat_id']
         :param period: unicode string represents date in 27.09.2018 format
         :param is_debt: True/False
-        :return:
-        {
-            "is_debt": true,
-            "is_paid": true,
-            "amount": 2982.77,
-            "service_code": "emp.zkh",
-            "insurance": 61.93,
-            "ammount_insurance": 3044.7
-        }
+        :return: array of
+        [{
+            "uin": "234234234234234234234234",
+            "insurance_amount": null,
+            "period": "01.12.2021",
+            "epd_type": "REGULAR",
+            "payment_amount": "3316,73",
+            "payment_date": "01.12.2021",
+            "payment_status": "PAID",
+            "initiator": "MFC",
+            "create_date": "11.12.2021 19:34",
+            "penalty_amount": "0,00",
+            "amount": "3316,73",
+            "amount_with_insurance": null
+        }]
         """
         assert self.session_id
         wheaders = deepcopy(self.headers)
@@ -605,11 +611,11 @@ class Client(object):
         wcrequest = deepcopy(self.post_request_data)
         wcrequest.update({
             'flat_id': flat_id,
-            'period': period,
-            'is_debt': is_debt,
+            'begin_period': begin_period,
+            'end_period': end_period
         })
 
-        ret = self.session.post(API_V1_1 + '/epd/get',
+        ret = self.session.post(API_V1_2 + '/epd/get',
                                  params={'token': self.token},
                                  headers=wheaders,
                                  verify=self.verify,

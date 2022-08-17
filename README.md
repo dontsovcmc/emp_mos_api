@@ -79,7 +79,7 @@ api.send_electrocounters(flat_id, new_values)
 ```
 ### Получить епд
 ```
-epd = api.get_epd(flat_id, period, is_debit)
+epd = api.get_epd(flat_id, begin_period, end_period)
 ```
 ### Получить штрафы
 ```

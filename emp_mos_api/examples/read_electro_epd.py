@@ -48,15 +48,12 @@ if __name__ == "__main__":
             print('Счет электро: ', f['electro_account'])
             print('Счетчик электро: ', f['electro_device'])
 
-            for x in range (1,13):
-                date = '10.{}.2018'.format(x)
-                epd = api.get_epd(f['flat_id'], date, False)
-                if epd == []:
-                    epd = api.get_epd(f['flat_id'], date, False)
-                epd_total = epd[0]['amount']
-                epd_is_paid = epd[0]['is_paid']
-                print(" - Дата: {}, сумма: {}, оплачен: {}.".format(date, epd_total, epd_is_paid))
-                time.sleep(1)
+            epds = api.get_epd(f['flat_id'], '01.01.2018', '31.12.2018')
+            for epd in epds:
+                period = epd['period']
+                epd_total = epd['amount']
+                epd_is_paid = epd['payment_status'] == 'PAID'
+                print(" - Дата: {}, сумма: {}, оплачен: {}.".format(period, epd_total, epd_is_paid))
 
             if f['electro_account'] != "":
                 electro = api.get_electrocounters(f['flat_id'])
